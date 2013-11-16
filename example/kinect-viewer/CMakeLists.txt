@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+
+# Project name
+project(kinect-viewer)
+
+# Point Cloud Library
+find_package(PCL 1.7 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+# Object Detection Library
+include_directories("../..")
+add_subdirectory("../../libobjdetect" "${CMAKE_CURRENT_BINARY_DIR}/libobjdetect")
+
+# Build executable and link
+add_executable (kinect-viewer kinect-viewer.cpp)
+target_link_libraries (kinect-viewer ${PCL_LIBRARIES} ObjectDetection)
