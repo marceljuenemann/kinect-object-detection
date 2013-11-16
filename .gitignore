@@ -11,3 +11,14 @@
 *.lai
 *.la
 *.a
+
+# Qt Creator files
+kinect-object-detection.config
+kinect-object-detection.creator
+kinect-object-detection.creator.user
+kinect-object-detection.files
+kinect-object-detection.includes
+
+# Target directories
+bin
+build

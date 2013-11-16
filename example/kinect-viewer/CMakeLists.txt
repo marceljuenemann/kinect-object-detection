@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
+# Output dir is bin (assumes build happens in build/ dir)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
+
 # Project name
 project(kinect-viewer)
 
