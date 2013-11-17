@@ -4,21 +4,21 @@
 #include "core.hpp"
 #include <pcl/io/openni_grabber.h>
 
-namespace libobjdetect {
+using namespace boost;
+using namespace pcl;
 
-    using namespace boost;
-    using namespace pcl;
+namespace libobjdetect {
 
     class KinectPointCloudProducer : public PointCloudProducer {
     public:
         KinectPointCloudProducer();
-        void grabberCallback(const PointCloud<Point>::ConstPtr &cloud);
-        void registerConsumer(shared_ptr<PointCloudConsumer> consumer);
+        void grabberCallback(const pcl::PointCloud<Point>::ConstPtr &cloud);
+        void registerConsumer(boost::shared_ptr<PointCloudConsumer> consumer);
         void stop();
 
     private:
-        shared_ptr<Grabber> grabber;
-        std::vector<shared_ptr<PointCloudConsumer> > consumers;
+        shared_ptr<pcl::Grabber> grabber;
+        std::vector<boost::shared_ptr<PointCloudConsumer> > consumers;
     };
 
 }

@@ -5,13 +5,10 @@
 
 namespace libobjdetect {
 
-    using namespace boost;
-    using namespace pcl;
-
     /**
      * @brief type definitions
      */
-    typedef PointXYZRGBA Point;
+    typedef pcl::PointXYZRGBA Point;
 
     /**
      * @brief Receives PointCloud objects from a producer and processes them
@@ -19,7 +16,7 @@ namespace libobjdetect {
     class PointCloudConsumer {
     public:
         virtual ~PointCloudConsumer() {}
-        virtual void consumePointCloud(PointCloud<Point>::ConstPtr cloud) = 0;
+        virtual void consumePointCloud(pcl::PointCloud<Point>::ConstPtr cloud) = 0;
     };
 
     /**
@@ -28,7 +25,7 @@ namespace libobjdetect {
     class PointCloudProducer {
     public:
         virtual ~PointCloudProducer() {}
-        virtual void registerConsumer(shared_ptr<PointCloudConsumer> consumer) = 0;
+        virtual void registerConsumer(boost::shared_ptr<PointCloudConsumer> consumer) = 0;
         virtual void stop() = 0;
     };
 

@@ -5,11 +5,11 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-namespace libobjdetect {
+using namespace boost;
+using namespace pcl;
+using namespace pcl::visualization;
 
-    using namespace boost;
-    using namespace pcl;
-    using namespace pcl::visualization;
+namespace libobjdetect {
 
     /**
      * @brief The PointCloudVisualizer class displays a PointCloud in a simple window using a PCLVisualizer.
@@ -22,26 +22,26 @@ namespace libobjdetect {
          * @brief Called when the producer sends a new point cloud. Do your cloud processing in here and call showPointCloud
          * @param visualizer
          */
-        virtual void onPointCloudReceived(PointCloud<Point>::ConstPtr cloud);
+        virtual void onPointCloudReceived(pcl::PointCloud<Point>::ConstPtr cloud);
 
         /**
          * @brief show the given cloud. Should only be called from within onPointCloudReceived
          * @param cloud
          * @param cloudname
          */
-        void showPointCloud (PointCloud<Point>::ConstPtr cloud, const std::string &cloudname = "cloud");
+        void showPointCloud (pcl::PointCloud<Point>::ConstPtr cloud, const std::string &cloudname = "cloud");
 
         /**
          * @brief Triggered when showPointCloud was called for the first time. Do intial setting on the visualizer here
          * @param visualizer
          */
-        virtual void onInit(PCLVisualizer& visualizer);
+        virtual void onInit(pcl::visualization::PCLVisualizer& visualizer);
 
         /**
          * @brief Called after each call to showPointCloud and intended for manipulating the visualizer
          * @param visualizer
          */
-        virtual void onUpdate(PCLVisualizer& visualizer);
+        virtual void onUpdate(pcl::visualization::PCLVisualizer& visualizer);
 
     public:
 
@@ -52,12 +52,12 @@ namespace libobjdetect {
         bool wasStopped();
 
         PointCloudViewer();
-        void consumePointCloud(PointCloud<Point>::ConstPtr cloud);
-        void _cb_init(PCLVisualizer& visualizer);
-        void _cb_update(PCLVisualizer& visualizer);
+        void consumePointCloud(pcl::PointCloud<Point>::ConstPtr cloud);
+        void _cb_init(pcl::visualization::PCLVisualizer& visualizer);
+        void _cb_update(pcl::visualization::PCLVisualizer& visualizer);
 
     private:
-        shared_ptr<CloudViewer> viewer;
+        boost::shared_ptr<pcl::visualization::CloudViewer> viewer;
         bool hasCloud;
     };
 
