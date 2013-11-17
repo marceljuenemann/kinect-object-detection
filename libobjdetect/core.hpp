@@ -1,8 +1,8 @@
-#ifndef CORE_HPP
-#define CORE_HPP
+#ifndef OBJDET_CORE_HPP
+#define OBJDET_CORE_HPP
 
 #include <pcl/common/common_headers.h>
-#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/cloud_viewer.h>
 
 namespace libobjdetect {
 
@@ -31,6 +31,7 @@ namespace libobjdetect {
     public:
         virtual ~PointCloudProducer() {}
         virtual void registerConsumer(shared_ptr<PointCloudConsumer> consumer) = 0;
+        virtual void stop() = 0;
     };
 
     /**
@@ -40,6 +41,7 @@ namespace libobjdetect {
     public:
         ExamplePointCloudProducer();
         void registerConsumer(shared_ptr<PointCloudConsumer> consumer);
+        void stop() {}
 
     private:
         PointCloud<Point>::Ptr examplePointCloud;
@@ -47,24 +49,54 @@ namespace libobjdetect {
 
     /**
      * @brief The PointCloudVisualizer class displays a PointCloud in a simple window using a PCLVisualizer.
-     * Override the onInit and onUpdate methods to extend the functionality
+     * Override the protect event listeners to extend the functionality or add processing.
      */
-    class PointCloudVisualizer : public PointCloudConsumer {
-    public:
-        PointCloudVisualizer();
-        void consumePointCloud(PointCloud<Point>::ConstPtr cloud);
-
-        bool spinOnce();
-
+    class PointCloudViewer : public PointCloudConsumer {
     protected:
-        shared_ptr<PCLVisualizer> viewer;
 
-        virtual void onInit();
+        /**
+         * @brief Called when the producer sends a new point cloud. Do your cloud processing in here and call showPointCloud
+         * @param visualizer
+         */
+        virtual void onPointCloudReceived(PointCloud<Point>::ConstPtr cloud);
 
-        virtual void onUpdate(PointCloud<Point>::ConstPtr cloud);
+        /**
+         * @brief show the given cloud. Should only be called from within onPointCloudReceived
+         * @param cloud
+         * @param cloudname
+         */
+        void showPointCloud (PointCloud<Point>::ConstPtr cloud, const std::string &cloudname = "cloud");
 
+        /**
+         * @brief Triggered when showPointCloud was called for the first time. Do intial setting on the visualizer here
+         * @param visualizer
+         */
+        virtual void onInit(PCLVisualizer& visualizer);
+
+        /**
+         * @brief Called after each call to showPointCloud and intended for manipulating the visualizer
+         * @param visualizer
+         */
+        virtual void onUpdate(PCLVisualizer& visualizer);
+
+    public:
+
+        /**
+         * @brief returns whether the visualizer was stopped. Yields the thread, so it can be used in a loop without sleeping
+         * @return
+         */
+        bool wasStopped();
+
+        PointCloudViewer();
+        void consumePointCloud(PointCloud<Point>::ConstPtr cloud);
+        void _cb_init(PCLVisualizer& visualizer);
+        void _cb_update(PCLVisualizer& visualizer);
+
+    private:
+        shared_ptr<CloudViewer> viewer;
+        bool hasCloud;
     };
 
 }
 
-#endif // CORE_HPP
+#endif // OBJDET_CORE_HPP

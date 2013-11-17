@@ -1,1 +1,5 @@
-add_library(ObjectDetection core.cpp)
+add_library(
+    ObjectDetection
+    core.cpp
+    io.cpp
+)

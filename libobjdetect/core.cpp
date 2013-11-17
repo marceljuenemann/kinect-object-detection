@@ -1,15 +1,15 @@
 #include "core.hpp"
 
-#include <boost/make_shared.hpp>
-#include <boost/thread/thread.hpp>
+#include <pcl/visualization/boost.h>
+#include <iostream>
 
 namespace libobjdetect {
 
     ////////////////////////////////////////////////////////
 
-    ExamplePointCloudProducer::ExamplePointCloudProducer() {
-        examplePointCloud = make_shared<PointCloud<Point> >();
-
+    ExamplePointCloudProducer::ExamplePointCloudProducer()
+        : examplePointCloud(new PointCloud<Point>)
+    {
         uint8_t r(255), g(15), b(15);
         for (float z(-1.0); z <= 1.0; z += 0.05) {
             for (float angle(0.0); angle <= 360.0; angle += 5.0) {
@@ -43,40 +43,55 @@ namespace libobjdetect {
 
     ////////////////////////////////////////////////////////
 
-    PointCloudVisualizer::PointCloudVisualizer() {
-        // Basic Visualizer setup
-        viewer = make_shared<PCLVisualizer>("TODO: Window Name");
-        viewer->setBackgroundColor (0, 0, 0);
-        viewer->addCoordinateSystem (1.0);
-        viewer->initCameraParameters ();
+    PointCloudViewer::PointCloudViewer()
+        : viewer(new CloudViewer("Point Cloud Viewer")),
+          hasCloud(false) {}
 
-        // Fill with empty cloud
-        PointCloud<Point>::Ptr emptyCloud (new PointCloud<Point>);
-        PointCloudColorHandlerRGBField<Point> rgb(emptyCloud);
-        viewer->addPointCloud (emptyCloud, rgb);
-        viewer->setPointCloudRenderingProperties (PCL_VISUALIZER_POINT_SIZE, 3);
+    ////////////////////////////////////////////////////////
 
-        // Call onInit
-        onInit();
+    void PointCloudViewer::consumePointCloud(PointCloud<Point>::ConstPtr cloud) {
+        onPointCloudReceived(cloud);
     }
 
-    void PointCloudVisualizer::consumePointCloud(PointCloud<Point>::ConstPtr cloud) {
-        onUpdate(cloud);
+    void PointCloudViewer::_cb_init(PCLVisualizer& visualizer) {
+        onInit(visualizer);
     }
 
-    bool PointCloudVisualizer::spinOnce() {
-        if (viewer->wasStopped ()) {
-            return false;
+    void PointCloudViewer::_cb_update(PCLVisualizer& visualizer) {
+        onUpdate(visualizer);
+    }
+
+    ////////////////////////////////////////////////////////
+
+    void PointCloudViewer::showPointCloud (PointCloud<Point>::ConstPtr cloud, const std::string &cloudname) {
+        viewer->showCloud(cloud, cloudname);
+
+        if (!hasCloud) {
+            hasCloud = true;
+            viewer->runOnVisualizationThreadOnce(bind(&PointCloudViewer::_cb_init, this, _1));
         }
 
-        viewer->spinOnce (100);
-        return true;
+        viewer->runOnVisualizationThreadOnce(bind(&PointCloudViewer::_cb_update, this, _1));
     }
 
-    void PointCloudVisualizer::onInit() {}
-
-    void PointCloudVisualizer::onUpdate(PointCloud<Point>::ConstPtr cloud) {
-        viewer->updatePointCloud(cloud);
+    bool PointCloudViewer::wasStopped() {
+        return viewer->wasStopped();
     }
 
+    ////////////////////////////////////////////////////////
+
+    void PointCloudViewer::onPointCloudReceived(PointCloud<Point>::ConstPtr cloud) {
+        showPointCloud(cloud);
+    }
+
+    void PointCloudViewer::onInit(PCLVisualizer& visualizer) {
+        visualizer.setBackgroundColor(0.3, 0.3, 1.0);
+        visualizer.setCameraClipDistances(1.0, 10.0);
+
+        // position viewport 3m behind kinect, but look around the point 2m in front of it
+        visualizer.setCameraPosition(0., 0., -3., 0., 0., 2., 0., -1., 0.);
+    }
+
+    void PointCloudViewer::onUpdate(PCLVisualizer& visualizer) {
+    }
 }

@@ -1,16 +1,6 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+# Target directories
+bin
+build
 
 # Qt Creator files
 kinect-object-detection.config
@@ -18,7 +8,3 @@ kinect-object-detection.creator
 kinect-object-detection.creator.user
 kinect-object-detection.files
 kinect-object-detection.includes
-
-# Target directories
-bin
-build

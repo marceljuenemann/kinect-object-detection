@@ -1,15 +1,15 @@
 #include <libobjdetect/core.hpp>
+#include <libobjdetect/io.hpp>
 
 using namespace libobjdetect;
 
 int main (int argc, char** argv) {
-    shared_ptr<PointCloudVisualizer> visualizer(new PointCloudVisualizer);
-    shared_ptr<PointCloudProducer> producer(new ExamplePointCloudProducer);
-    producer->registerConsumer(visualizer);
+    shared_ptr<PointCloudViewer> viewer(new PointCloudViewer);
+    shared_ptr<PointCloudProducer> producer(new KinectPointCloudProducer);
+    producer->registerConsumer(viewer);
 
-    while (visualizer->spinOnce()) {
-        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
-    }
+    while (!viewer->wasStopped()) {}
+    producer->stop();
 
     return 0;
 }
