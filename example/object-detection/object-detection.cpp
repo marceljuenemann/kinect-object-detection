@@ -29,11 +29,14 @@ protected:
 
 
 int main (int argc, char** argv) {
+    ConfigProvider::Ptr config(new IniFileConfigProvider("config.ini"));
     shared_ptr<PointCloudViewer> viewer(new ObjectDetectionViewer);
     shared_ptr<PointCloudProducer> producer(new KinectPointCloudProducer);
 
     producer->registerConsumer(viewer);
-    while (!viewer->wasStopped()) {}
+    while (!viewer->wasStopped()) {
+        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    }
     producer->stop();
 
     return 0;
