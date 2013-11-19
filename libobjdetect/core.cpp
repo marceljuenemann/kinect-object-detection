@@ -2,7 +2,7 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/thread.hpp>
 
-#define CONFIG_UPDATE_INTERVAL 1000
+#define CONFIG_UPDATE_INTERVAL 500
 
 using namespace boost;
 
@@ -21,6 +21,7 @@ namespace libobjdetect {
 
     template<class Type>
     Type IniFileConfigProvider::getConfig(const std::string &path) {
+        // TODO: Don't lock on read
         mutex::scoped_lock lock(mtx);
 
         posix_time::time_duration diff = posix_time::second_clock::local_time() - lastUpdate;
