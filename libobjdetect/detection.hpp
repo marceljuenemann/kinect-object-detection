@@ -20,11 +20,11 @@ namespace libobjdetect {
         static Scene::Ptr fromPointCloud(pcl::PointCloud<Point>::ConstPtr &cloud, ConfigProvider::Ptr config);
 
     private:
-        pcl::PointCloud<Point>::Ptr cloud;
+        pcl::PointCloud<Point>::ConstPtr cloud;
         pcl::PointCloud<Point>::Ptr downsampledCloud;
         pcl::PointCloud<pcl::Normal>::Ptr normals;
 
-        Scene();
+        Scene(){}
     };
 
 }

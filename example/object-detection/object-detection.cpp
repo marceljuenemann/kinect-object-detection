@@ -120,13 +120,12 @@ protected:
             tmpFoundTableHulls = foundTableHulls;
         }
 
-
-
+        // TODO: print this info in the corner of the window
         posix_time::time_duration diff = posix_time::microsec_clock::local_time() - startTime;
         std::cout << "Cloud processing took " << diff.total_milliseconds() << "ms\n";
         std::cout.flush();
 
-        showPointCloud(scene->getDownsampledPointCloud());
+        showPointCloud(scene->getFullPointCloud());
     }
 
     virtual void onInit(PCLVisualizer& visualizer) {
@@ -137,16 +136,12 @@ protected:
         visualizer.removeAllShapes();
 
         std::vector<PointCloud<Point>::Ptr> foundTableHulls = tmpFoundTableHulls;
-        std::cout << "Found " << foundTableHulls.size() << " tables with following hulls:\n";
         for (int i = 0; i < foundTableHulls.size(); ++i) {
             std::string tableId("table");
             tableId += i;
-            pcl::PointCloud<Point>::ConstPtr cloud(new pcl::PointCloud<Point>(*(foundTableHulls[i])));
-            visualizer.addPolygon<Point>(cloud, 0, 255, 0, tableId);
-            for (int x = 0; x < foundTableHulls[i]->points.size(); ++x) {
-                std::cout << "(" << foundTableHulls[i]->points[x].x << "," << foundTableHulls[i]->points[x].y << "," << foundTableHulls[i]->points[x].z << ")\n";
-            }
-        }
+            //pcl::PointCloud<Point>::ConstPtr cloud(new pcl::PointCloud<Point>(*(foundTableHulls[i])));
+            visualizer.addPolygon<Point>(foundTableHulls[i], 0, 255, 0, tableId);
+       }
     }
 
 

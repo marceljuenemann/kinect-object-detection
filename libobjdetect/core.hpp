@@ -39,6 +39,7 @@ namespace libobjdetect {
         typedef boost::shared_ptr<ConfigProvider> Ptr;
 
         virtual ~ConfigProvider() {}
+        virtual bool getBoolean(const std::string &path) = 0;
         virtual int getInt(const std::string &path) = 0;
         virtual double getDouble(const std::string &path) = 0;
         virtual std::string getString(const std::string &path) = 0;
@@ -50,6 +51,7 @@ namespace libobjdetect {
     class IniFileConfigProvider : public ConfigProvider {
     public:
         IniFileConfigProvider(const std::string &filename);
+        bool getBoolean(const std::string &path);
         int getInt(const std::string &path);
         double getDouble(const std::string &path);
         std::string getString(const std::string &path);

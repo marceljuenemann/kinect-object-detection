@@ -35,53 +35,37 @@ namespace libobjdetect {
         return normals;
     }
 
-    Scene::Ptr Scene::fromPointCloud(PointCloud<Point>::ConstPtr &cloud, ConfigProvider::Ptr config) {
-        // trim to reachable area
-        double minX = config->getDouble("preprocessing.minX");
-        double maxX = config->getDouble("preprocessing.maxX");
-        double minY = config->getDouble("preprocessing.minY");
-        double maxY = config->getDouble("preprocessing.maxY");
-        double minZ = config->getDouble("preprocessing.minZ");
-        double maxZ = config->getDouble("preprocessing.maxZ");
-
-        // TODO: do this more effienct and include flags for activate/deactivate filtering
-        PointCloud<Point>::Ptr cloudIn (new PointCloud<Point>(*cloud));
-        PointCloud<Point>::Ptr cloudOut(new PointCloud<Point>());
-        PassThrough<Point> filterReachable;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("x");
-        filterReachable.setFilterLimits(minX, maxX);
-        filterReachable.filter(*cloudOut);
-
-        cloudIn = cloudOut;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("y");
-        filterReachable.setFilterLimits(minY, maxY);
-        filterReachable.filter(*cloudOut);
-
-        cloudIn = cloudOut;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("z");
-        filterReachable.setFilterLimits(minZ, maxZ);
-        filterReachable.filter(*cloudOut);
-
+    Scene::Ptr Scene::fromPointCloud(PointCloud<Point>::ConstPtr &originalCloud, ConfigProvider::Ptr config) {
+        // Build the result object
         Scene::Ptr scene(new Scene());
-        scene->cloud = cloudOut;
-        scene->downsampledCloud = make_shared< PointCloud<Point> >(*(scene->cloud));
+        scene->cloud = originalCloud;
+        scene->downsampledCloud = make_shared< PointCloud<Point> >();
         scene->normals = make_shared< PointCloud<Normal> >();
 
+        // Crop the point cloud
+        PassThrough<Point> cropFilter;
+        PointCloud<Point>::Ptr cropCloud(new PointCloud<Point>());
+        std::string keyPrefix("preprocessing.");
+        for (char direction = 'z'; direction >= 'x'; --direction) {
+            if (!config->getBoolean(keyPrefix + direction + "_filter")) {
+                continue;
+            }
+
+            double min = config->getDouble(keyPrefix + direction + "_min");
+            double max = config->getDouble(keyPrefix + direction + "_max");
+            cropFilter.setInputCloud(scene->cloud);
+            cropFilter.setFilterFieldName(std::string("") + direction);
+            cropFilter.setFilterLimits(min, max);
+            cropFilter.filter(*cropCloud);
+            scene->cloud = cropCloud;
+        }
 
         // Downsample data
-        //PointCloud<Point>::Ptr cloudDownsampled(new PointCloud<Point>(*cloudOut));
-
-        /* TODO: https://github.com/PointCloudLibrary/pcl/issues/371
         double downsamplingResolution = config->getDouble("preprocessing.downsamplingResolution");
-        PointCloud<Point>::Ptr cloudDownsampled(new PointCloud<Point>());
         VoxelGrid<Point> downsampler;
-        downsampler.setInputCloud(cloud);
+        downsampler.setInputCloud(scene->cloud);
         downsampler.setLeafSize(downsamplingResolution, downsamplingResolution, downsamplingResolution);
-        downsampler.filter(*cloudDownsampled);
-        */
+        downsampler.filter(*(scene->downsampledCloud));
 
         // calculate surface normals
         NormalEstimation<Point, Normal> normalEstimator;

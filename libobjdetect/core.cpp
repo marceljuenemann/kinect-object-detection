@@ -1,5 +1,6 @@
 #include "core.hpp"
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/thread.hpp>
 
 #define CONFIG_UPDATE_INTERVAL 500
@@ -33,6 +34,10 @@ namespace libobjdetect {
     }
 
     ////////////////////////////////////////////////////////
+
+    bool IniFileConfigProvider::getBoolean(const std::string &path) {
+        return iequals(getConfig<std::string>(path), "ON");
+    }
 
     int IniFileConfigProvider::getInt(const std::string &path) {
         return getConfig<int>(path);

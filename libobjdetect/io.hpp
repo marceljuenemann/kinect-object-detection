@@ -2,6 +2,7 @@
 #define OBJDET_IO_HPP
 
 #include "core.hpp"
+#include <pcl/io/openni_grabber.h>
 
 #include <pcl/io/grabber.h>
 
