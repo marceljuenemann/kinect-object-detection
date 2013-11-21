@@ -1,6 +1,7 @@
 #include <libobjdetect/core.hpp>
 #include <libobjdetect/io.hpp>
 #include <libobjdetect/viewer.hpp>
+#include <libobjdetect/detection.hpp>
 
 #include <boost/make_shared.hpp>
 #include <pcl/console/parse.h>
@@ -22,7 +23,9 @@
 #include <pcl/surface/convex_hull.h>
 
 using namespace libobjdetect;
-
+using namespace boost;
+using namespace pcl;
+using namespace pcl::visualization;
 
 class ObjectDetectionViewer : public PointCloudViewer {
 private:
@@ -37,59 +40,10 @@ protected:
         posix_time::ptime startTime = posix_time::microsec_clock::local_time();
 
 
-        // trim to reachable area
-        double minX = config->getDouble("preprocessing.minX");
-        double maxX = config->getDouble("preprocessing.maxX");
-        double minY = config->getDouble("preprocessing.minY");
-        double maxY = config->getDouble("preprocessing.maxY");
-        double minZ = config->getDouble("preprocessing.minZ");
-        double maxZ = config->getDouble("preprocessing.maxZ");
+        Scene::Ptr scene = Scene::fromPointCloud(cloud, config);
+        PointCloud<Normal>::ConstPtr normals = scene->getNormals();
+        PointCloud<Point>::ConstPtr cloudDownsampled = scene->getDownsampledPointCloud();
 
-        PointCloud<Point>::Ptr cloudIn (new PointCloud<Point>(*cloud));
-        PointCloud<Point>::Ptr cloudOut(new PointCloud<Point>());
-        PassThrough<Point> filterReachable;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("x");
-        filterReachable.setFilterLimits(minX, maxX);
-        filterReachable.filter(*cloudOut);
-
-        cloudIn = cloudOut;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("y");
-        filterReachable.setFilterLimits(minY, maxY);
-        filterReachable.filter(*cloudOut);
-
-        cloudIn = cloudOut;
-        filterReachable.setInputCloud(cloudIn);
-        filterReachable.setFilterFieldName("z");
-        filterReachable.setFilterLimits(minZ, maxZ);
-        filterReachable.filter(*cloudOut);
-
-        // Downsample data
-        PointCloud<Point>::Ptr cloudDownsampled(new PointCloud<Point>(*cloudOut));
-        /*int downsamplingResolutionTmp = config->getDouble("preprocessing.downsamplingResolutionTmp");
-        for (int i=0; i<cloud->points.size(); i += downsamplingResolutionTmp){
-            cloudDownsampled->points.push_back(cloud->points[i]);
-        }*/
-
-        /* TODO: https://github.com/PointCloudLibrary/pcl/issues/371
-        double downsamplingResolution = config->getDouble("preprocessing.downsamplingResolution");
-        PointCloud<Point>::Ptr cloudDownsampled(new PointCloud<Point>());
-        VoxelGrid<Point> downsampler;
-        downsampler.setInputCloud(cloud);
-        downsampler.setLeafSize(downsamplingResolution, downsamplingResolution, downsamplingResolution);
-        downsampler.filter(*cloudDownsampled);
-        */
-
-
-        // calculate surface normals
-        PointCloud<Normal>::Ptr normals = make_shared< PointCloud<Normal> >();
-        NormalEstimation<Point, Normal> normalEstimator;
-        search::KdTree<Point>::Ptr treeNormals(new search::KdTree<Point>());
-        normalEstimator.setInputCloud(cloudDownsampled);
-        normalEstimator.setSearchMethod(treeNormals);
-        normalEstimator.setKSearch(10);
-        normalEstimator.compute(*normals);
 
         // filter points by their normals
         double tableDetectionMaxAngle = config->getDouble("tableDetection.maxAngle");
@@ -172,7 +126,7 @@ protected:
         std::cout << "Cloud processing took " << diff.total_milliseconds() << "ms\n";
         std::cout.flush();
 
-        showPointCloud(cloud);
+        showPointCloud(scene->getDownsampledPointCloud());
     }
 
     virtual void onInit(PCLVisualizer& visualizer) {

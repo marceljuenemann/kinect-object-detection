@@ -1,6 +1,10 @@
 #include "io.hpp"
 
 #include <boost/make_shared.hpp>
+#include <pcl/io/openni_grabber.h>
+
+using namespace boost;
+using namespace pcl;
 
 namespace libobjdetect {
 

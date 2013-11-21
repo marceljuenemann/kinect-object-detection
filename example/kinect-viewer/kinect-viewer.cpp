@@ -6,6 +6,9 @@
 #include <pcl/console/parse.h>
 
 using namespace libobjdetect;
+using namespace boost;
+using namespace pcl;
+using namespace pcl::visualization;
 
 class ExamplePointCloudProducer : public PointCloudProducer {
 private:

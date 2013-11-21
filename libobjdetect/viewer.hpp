@@ -5,10 +5,6 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-using namespace boost;
-using namespace pcl;
-using namespace pcl::visualization;
-
 namespace libobjdetect {
 
     /**

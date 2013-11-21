@@ -1,6 +1,10 @@
 #include "viewer.hpp"
 #include <pcl/visualization/boost.h>
 
+using namespace boost;
+using namespace pcl;
+using namespace pcl::visualization;
+
 namespace libobjdetect {
     PointCloudViewer::PointCloudViewer()
         : viewer(new CloudViewer("Point Cloud Viewer")),

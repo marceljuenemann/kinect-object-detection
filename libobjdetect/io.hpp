@@ -2,10 +2,8 @@
 #define OBJDET_IO_HPP
 
 #include "core.hpp"
-#include <pcl/io/openni_grabber.h>
 
-using namespace boost;
-using namespace pcl;
+#include <pcl/io/grabber.h>
 
 namespace libobjdetect {
 
@@ -17,7 +15,7 @@ namespace libobjdetect {
         void stop();
 
     private:
-        shared_ptr<pcl::Grabber> grabber;
+        boost::shared_ptr<pcl::Grabber> grabber;
         std::vector<boost::shared_ptr<PointCloudConsumer> > consumers;
     };
 
