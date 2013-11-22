@@ -38,12 +38,12 @@ namespace libobjdetect {
         double getWidth() { return maxDimensions.x - minDimensions.x; }
         double getDepth() { return maxDimensions.z - minDimensions.z; }
 
-        static Table::Ptr fromConvexHull(pcl::PointCloud<Point>::ConstPtr &hull);
-        
+        static Table::Ptr fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull);
+
     private:
         pcl::PointCloud<Point>::ConstPtr convexHull;
         Point minDimensions;
-        Point maxDImensions;
+        Point maxDimensions;
         
         Table(){}
     };

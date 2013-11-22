@@ -68,9 +68,12 @@ namespace libobjdetect {
 
     ////////////////////////////////////////////////////////
 
-    static Table::Ptr Table::fromConvexHull(pcl::PointCloud<Point>::ConstPtr &hull) {
-        convexHull = hull;
-        getMinMax3D(*hull, minDimensions, maxDimensions);
+    Table::Ptr Table::fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull) {
+        Table::Ptr table(new Table());
+        table->convexHull = hull;
+        getMinMax3D(*hull, table->minDimensions, table->maxDimensions);
+
+        return table;
     }
         
     ////////////////////////////////////////////////////////
@@ -90,9 +93,9 @@ namespace libobjdetect {
         }
 
         // not enough candidates?
-        Table::Collection foundTables(new std::vector<PointCloud<Point>::Ptr>());
+        Table::Collection foundTables(new std::vector<Table::Ptr>());
         int minPoints = config->getInt("tableDetection.minPoints");
-        if (cloudTableCandidates->points.size() < minPoints){
+        if (candidatePoints->points.size() < minPoints){
             return foundTables;
         }
         
@@ -100,12 +103,12 @@ namespace libobjdetect {
         std::vector<PointIndices> tableClusters;
         EuclideanClusterExtraction<Point> clusterExtractor;
         search::KdTree<Point>::Ptr kdtree(new search::KdTree<Point>);
-        treeTables->setInputCloud(candidatePoints);
-        clusterTables.setInputCloud(candidatePoints);
-        clusterTables.setSearchMethod(kdtree);
-        clusterTables.setMinClusterSize(minPoints);
-        clusterTables.setClusterTolerance(config->getDouble("tableDetection.tolerance"));
-        clusterTables.extract(tableClusters);
+        kdtree->setInputCloud(candidatePoints);
+        clusterExtractor.setInputCloud(candidatePoints);
+        clusterExtractor.setSearchMethod(kdtree);
+        clusterExtractor.setMinClusterSize(minPoints);
+        clusterExtractor.setClusterTolerance(config->getDouble("tableDetection.tolerance"));
+        clusterExtractor.extract(tableClusters);
 
         // prepare RANSAC (used for finding a plane model)
         SACSegmentation<Point> segmentation;
@@ -119,7 +122,7 @@ namespace libobjdetect {
         // for each table cluster...
         double minWidth = config->getDouble("tableDetection.minWidth");
         double minDepth = config->getDouble("tableDetection.minDepth");
-        for (std::vector<PointIndices>::iterator cluster = tableClusters.begin(); cluster != tableClusters.end(); ++c) {
+        for (std::vector<PointIndices>::iterator cluster = tableClusters.begin(); cluster != tableClusters.end(); ++cluster) {
             // find a plane model
             ModelCoefficients::Ptr planeCoefficients(new ModelCoefficients());
             PointIndices::Ptr tableIndices(new PointIndices());
@@ -131,11 +134,11 @@ namespace libobjdetect {
             // project the table points on the plane model
             PointCloud<Point>::Ptr projectedTable(new PointCloud<Point>());
             ProjectInliers<Point> projector;
-            projectionTable.setInputCloud(candidatePoints);
-            projectionTable.setIndices(tableIndices);
-            projectionTable.setModelCoefficients(planeCoefficients);
-            projectionTable.setModelType(SACMODEL_PLANE);
-            projectionTable.filter(*projectedTable);
+            projector.setInputCloud(candidatePoints);
+            projector.setIndices(tableIndices);
+            projector.setModelCoefficients(planeCoefficients);
+            projector.setModelType(SACMODEL_PLANE);
+            projector.filter(*projectedTable);
 
             // calculate a (2-dimensional) convex hull
             PointCloud<Point>::Ptr tableHull(new PointCloud<Point>());
