@@ -27,6 +27,7 @@ using namespace boost;
 using namespace pcl;
 using namespace pcl::visualization;
 
+/*
 class ObjectDetectionViewer : public PointCloudViewer {
 private:
     typedef PointCloudViewer super;
@@ -149,7 +150,7 @@ public:
     ObjectDetectionViewer(ConfigProvider::Ptr config) : config(config) {}
 };
 
-
+*/
 int main (int argc, char** argv) {
     ConfigProvider::Ptr config(new IniFileConfigProvider("config.ini"));
     shared_ptr<PointCloudViewer> viewer(new ObjectDetectionViewer(config));

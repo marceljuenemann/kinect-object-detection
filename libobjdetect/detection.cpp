@@ -75,7 +75,7 @@ namespace libobjdetect {
         
     ////////////////////////////////////////////////////////
 
-    boost::shared_ptr< std::vector<Table::Ptr> > TableDetector::detectTables(Scene::Ptr scene) {
+    Table::Collection TableDetector::detectTables(Scene::Ptr scene) {
         PointCloud<Point>::ConstPtr cloud = scene->getDownsampledPointCloud();
         PointCloud<Normal>::ConstPtr normals = scene->getNormals();
         
@@ -90,7 +90,7 @@ namespace libobjdetect {
         }
 
         // not enough candidates?
-        shared_ptr< std::vector<PointCloud<Point>::Ptr> > foundTables(new std::vector<PointCloud<Point>::Ptr>());
+        Table::Collection foundTables(new std::vector<PointCloud<Point>::Ptr>());
         int minPoints = config->getInt("tableDetection.minPoints");
         if (cloudTableCandidates->points.size() < minPoints){
             return foundTables;
@@ -118,6 +118,7 @@ namespace libobjdetect {
 
         // for each table cluster...
         double minWidth = config->getDouble("tableDetection.minWidth");
+        double minDepth = config->getDouble("tableDetection.minDepth");
         for (std::vector<PointIndices>::iterator cluster = tableClusters.begin(); cluster != tableClusters.end(); ++c) {
             // find a plane model
             ModelCoefficients::Ptr planeCoefficients(new ModelCoefficients());
@@ -144,15 +145,12 @@ namespace libobjdetect {
 
             // check for minimal width and depth
             Table::Ptr table = Table::fromConvexHull(tableHull);
-            if (table maxDimensions.x - minDimensions.x < minWidth) continue;
-            if (maxDimensions.z - minDimensions.z < minWidth) continue;
-
-
-            foundTableHulls.push_back(hullTable);
+            if (table->getWidth() < minWidth) continue;
+            if (table->getDepth() < minDepth) continue;
+            foundTables->push_back(table);
         }
-        tmpFoundTableHulls = foundTableHulls;
-    }
-    
+        
+        return foundTables;
     }
 
 }

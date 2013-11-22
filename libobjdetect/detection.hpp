@@ -30,10 +30,11 @@ namespace libobjdetect {
     class Table {
     public:
         typedef boost::shared_ptr<Table> Ptr;
+        typedef boost::shared_ptr<std::vector<Table::Ptr> > Collection;
         
         pcl::PointCloud<Point>::ConstPtr getConvexHull() { return convexHull; }
-        pcl::Point getMinDimensions() { return minDimensions; }
-        pcl::Point getMaxDimensions() { return maxDimensions; }
+        Point getMinDimensions() { return minDimensions; }
+        Point getMaxDimensions() { return maxDimensions; }
         double getWidth() { return maxDimensions.x - minDimensions.x; }
         double getDepth() { return maxDimensions.z - minDimensions.z; }
 
@@ -41,20 +42,20 @@ namespace libobjdetect {
         
     private:
         pcl::PointCloud<Point>::ConstPtr convexHull;
-        pcl::Point minDimensions;
-        pcl::Point maxDImensions;
+        Point minDimensions;
+        Point maxDImensions;
         
         Table(){}
-    }
+    };
 
     class TableDetector {
     public:
         TableDetector(ConfigProvider::Ptr config) : config(config) {}
-        boost::shared_ptr< std::vector<Table::Ptr> > detectTables(Scene::Ptr scene);
+        Table::Collection detectTables(Scene::Ptr scene);
         
     private:
         ConfigProvider::Ptr config;
-    }
+    };
 
 }
 
