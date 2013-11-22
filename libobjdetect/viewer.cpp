@@ -63,11 +63,11 @@ namespace libobjdetect {
         posix_time::ptime startTime = posix_time::microsec_clock::local_time();
 
         Scene::Ptr scene = Scene::fromPointCloud(cloud, config);
-        shared_ptr< std::vector<Table::Ptr> > detectedTables = tableDetector->detectTables(scene);
+        Table::Collection detectedTables = tableDetector.detectTables(scene);
 
         {
             mutex::scoped_lock(resultMutex);
-            this.detectedTables = detectedTables;
+            this->detectedTables = detectedTables;
         }
 
         posix_time::time_duration diff = posix_time::microsec_clock::local_time() - startTime;
@@ -76,16 +76,16 @@ namespace libobjdetect {
         showPointCloud(scene->getFullPointCloud());
     }
 
-    virtual void onUpdate(PCLVisualizer& visualizer) {
+    void ObjectDetectionViewer::onUpdate(PCLVisualizer& visualizer) {
         Table::Collection tables;
         {
             mutex::scoped_lock(resultMutex);
-            tables = this.detectedTables;
+            tables = this->detectedTables;
         }
             
         int tableId = 0;
         visualizer.removeAllShapes();
-        for (Table::Collection::Iterator table = tables->begin(); table != tables->end(); ++table) {
+        for (std::vector<Table::Ptr>::Iterator table = tables->begin(); table != tables->end(); ++table) {
             visualizer.addPolygon<Point>(foundTableHulls[i], 0, 255, 0, std::string("table") + (tableId++));
         }
        

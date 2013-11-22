@@ -2,6 +2,7 @@
 #define VIEWER_HPP
 
 #include "core.hpp"
+#include "detection.hpp"
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
@@ -66,8 +67,8 @@ namespace libobjdetect {
     protected:
         ConfigProvider::Ptr config;
 
-        void onPointCloudReceived(PointCloud<Point>::ConstPtr cloud);
-        void onUpdate(PCLVisualizer& visualizer);
+        void onPointCloudReceived(pcl::PointCloud<Point>::ConstPtr cloud);
+        void onUpdate(pcl::visualization::PCLVisualizer& visualizer);
         
     private:
         typedef PointCloudViewer super;
@@ -76,7 +77,7 @@ namespace libobjdetect {
         boost::mutex resultMutex;
         Table::Collection detectedTables;
         int processingTime;
-    }
+    };
 }
 
 #endif // VIEWER_HPP
