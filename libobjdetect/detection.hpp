@@ -13,9 +13,9 @@ namespace libobjdetect {
     public:
         typedef boost::shared_ptr<Scene> Ptr;
 
-        pcl::PointCloud<Point>::ConstPtr getFullPointCloud();
-        pcl::PointCloud<Point>::ConstPtr getDownsampledPointCloud();
-        pcl::PointCloud<pcl::Normal>::ConstPtr getNormals();
+        pcl::PointCloud<Point>::ConstPtr getFullPointCloud() { return cloud; }
+        pcl::PointCloud<Point>::ConstPtr getDownsampledPointCloud() { return downsampledCloud; }
+        pcl::PointCloud<pcl::Normal>::ConstPtr getNormals() { return normals; }
 
         static Scene::Ptr fromPointCloud(pcl::PointCloud<Point>::ConstPtr &cloud, ConfigProvider::Ptr config);
 
@@ -26,6 +26,35 @@ namespace libobjdetect {
 
         Scene(){}
     };
+
+    class Table {
+    public:
+        typedef boost::shared_ptr<Table> Ptr;
+        
+        pcl::PointCloud<Point>::ConstPtr getConvexHull() { return convexHull; }
+        pcl::Point getMinDimensions() { return minDimensions; }
+        pcl::Point getMaxDimensions() { return maxDimensions; }
+        double getWidth() { return maxDimensions.x - minDimensions.x; }
+        double getDepth() { return maxDimensions.z - minDimensions.z; }
+
+        static Table::Ptr fromConvexHull(pcl::PointCloud<Point>::ConstPtr &hull);
+        
+    private:
+        pcl::PointCloud<Point>::ConstPtr convexHull;
+        pcl::Point minDimensions;
+        pcl::Point maxDImensions;
+        
+        Table(){}
+    }
+
+    class TableDetector {
+    public:
+        TableDetector(ConfigProvider::Ptr config) : config(config) {}
+        boost::shared_ptr< std::vector<Table::Ptr> > detectTables(Scene::Ptr scene);
+        
+    private:
+        ConfigProvider::Ptr config;
+    }
 
 }
 

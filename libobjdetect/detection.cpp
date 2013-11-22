@@ -23,18 +23,6 @@ using namespace pcl;
 
 namespace libobjdetect {
 
-    PointCloud<Point>::ConstPtr Scene::getFullPointCloud() {
-        return cloud;
-    }
-
-    PointCloud<Point>::ConstPtr Scene::getDownsampledPointCloud() {
-        return downsampledCloud;
-    }
-
-    PointCloud<pcl::Normal>::ConstPtr Scene::getNormals() {
-        return normals;
-    }
-
     Scene::Ptr Scene::fromPointCloud(PointCloud<Point>::ConstPtr &originalCloud, ConfigProvider::Ptr config) {
         // Build the result object
         Scene::Ptr scene(new Scene());
@@ -79,5 +67,92 @@ namespace libobjdetect {
     }
 
     ////////////////////////////////////////////////////////
+
+    static Table::Ptr Table::fromConvexHull(pcl::PointCloud<Point>::ConstPtr &hull) {
+        convexHull = hull;
+        getMinMax3D(*hull, minDimensions, maxDimensions);
+    }
+        
+    ////////////////////////////////////////////////////////
+
+    boost::shared_ptr< std::vector<Table::Ptr> > TableDetector::detectTables(Scene::Ptr scene) {
+        PointCloud<Point>::ConstPtr cloud = scene->getDownsampledPointCloud();
+        PointCloud<Normal>::ConstPtr normals = scene->getNormals();
+        
+        // filter points by their normals
+        PointCloud<Point>::Ptr candidatePoints(new PointCloud<Point>);
+        double maxAngle = config->getDouble("tableDetection.maxAngle");
+        maxAngle = cos(M_PI * maxAngle / 180.0);
+        for (int i = 0; i < normals->points.size(); ++i){
+            if (normals->points[i].normal_y >= maxAngle || normals->points[i].normal_y <= -maxAngle){
+                candidatePoints->points.push_back(cloud->points[i]);
+            }
+        }
+
+        // not enough candidates?
+        shared_ptr< std::vector<PointCloud<Point>::Ptr> > foundTables(new std::vector<PointCloud<Point>::Ptr>());
+        int minPoints = config->getInt("tableDetection.minPoints");
+        if (cloudTableCandidates->points.size() < minPoints){
+            return foundTables;
+        }
+        
+        // cluster the candidates to tables
+        std::vector<PointIndices> tableClusters;
+        EuclideanClusterExtraction<Point> clusterExtractor;
+        search::KdTree<Point>::Ptr kdtree(new search::KdTree<Point>);
+        treeTables->setInputCloud(candidatePoints);
+        clusterTables.setInputCloud(candidatePoints);
+        clusterTables.setSearchMethod(kdtree);
+        clusterTables.setMinClusterSize(minPoints);
+        clusterTables.setClusterTolerance(config->getDouble("tableDetection.tolerance"));
+        clusterTables.extract(tableClusters);
+
+        // prepare RANSAC (used for finding a plane model)
+        SACSegmentation<Point> segmentation;
+        segmentation.setModelType(SACMODEL_PLANE);
+        segmentation.setMethodType(SAC_RANSAC);
+        segmentation.setProbability(0.99);
+        segmentation.setMaxIterations(config->getInt("tableDetection.maxIterations"));
+        segmentation.setDistanceThreshold(config->getDouble("tableDetection.threshold"));
+        segmentation.setOptimizeCoefficients(false);
+
+        // for each table cluster...
+        double minWidth = config->getDouble("tableDetection.minWidth");
+        for (std::vector<PointIndices>::iterator cluster = tableClusters.begin(); cluster != tableClusters.end(); ++c) {
+            // find a plane model
+            ModelCoefficients::Ptr planeCoefficients(new ModelCoefficients());
+            PointIndices::Ptr tableIndices(new PointIndices());
+            segmentation.setInputCloud(candidatePoints);
+            segmentation.setIndices(make_shared<PointIndices>(*cluster));
+            segmentation.segment(*tableIndices, *planeCoefficients);
+            if (tableIndices->indices.size() < minPoints) continue;
+
+            // project the table points on the plane model
+            PointCloud<Point>::Ptr projectedTable(new PointCloud<Point>());
+            ProjectInliers<Point> projector;
+            projectionTable.setInputCloud(candidatePoints);
+            projectionTable.setIndices(tableIndices);
+            projectionTable.setModelCoefficients(planeCoefficients);
+            projectionTable.setModelType(SACMODEL_PLANE);
+            projectionTable.filter(*projectedTable);
+
+            // calculate a (2-dimensional) convex hull
+            PointCloud<Point>::Ptr tableHull(new PointCloud<Point>());
+            ConvexHull<Point> convexHullCalculator;
+            convexHullCalculator.setInputCloud(projectedTable);
+            convexHullCalculator.reconstruct(*tableHull);
+
+            // check for minimal width and depth
+            Table::Ptr table = Table::fromConvexHull(tableHull);
+            if (table maxDimensions.x - minDimensions.x < minWidth) continue;
+            if (maxDimensions.z - minDimensions.z < minWidth) continue;
+
+
+            foundTableHulls.push_back(hullTable);
+        }
+        tmpFoundTableHulls = foundTableHulls;
+    }
+    
+    }
 
 }
