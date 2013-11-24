@@ -83,10 +83,13 @@ namespace libobjdetect {
             tables = this->detectedTables;
         }
             
-        int tableId = 0;
         visualizer.removeAllShapes();
-        for (std::vector<Table::Ptr>::Iterator table = tables->begin(); table != tables->end(); ++table) {
-            visualizer.addPolygon<Point>(foundTableHulls[i], 0, 255, 0, std::string("table") + (tableId++));
+
+        char strbuf[20];
+        int tableId = 0;
+        for (std::vector<Table::Ptr>::iterator table = tables->begin(); table != tables->end(); ++table) {
+            sprintf(strbuf, "table%d", tableId++); 
+            visualizer.addPolygon<Point>((*table)->getConvexHull(), 0, 255, 0, strbuf+);
         }
        
         // TODO: print processing time in lower left corner (together with FPS)
