@@ -4,7 +4,6 @@
 
 // todo: remove unnecessary headers
 #include <pcl/filters/voxel_grid.h>
-#include <pcl/ModelCoefficients.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
@@ -68,9 +67,10 @@ namespace libobjdetect {
 
     ////////////////////////////////////////////////////////
 
-    Table::Ptr Table::fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull) {
+    Table::Ptr Table::fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull, pcl::ModelCoefficients::ConstPtr modelCoefficients) {
         Table::Ptr table(new Table());
         table->convexHull = hull;
+        table->modelCoefficients = modelCoefficients;
         getMinMax3D(*hull, table->minDimensions, table->maxDimensions);
 
         return table;
@@ -147,7 +147,7 @@ namespace libobjdetect {
             convexHullCalculator.reconstruct(*tableHull);
 
             // check for minimal width and depth
-            Table::Ptr table = Table::fromConvexHull(tableHull);
+            Table::Ptr table = Table::fromConvexHull(tableHull, planeCoefficients);
             if (table->getWidth() < minWidth) continue;
             if (table->getDepth() < minDepth) continue;
             foundTables->push_back(table);
@@ -155,5 +155,123 @@ namespace libobjdetect {
         
         return foundTables;
     }
+
+    ////////////////////////////////////////////////////////
+
+    Object::Ptr Object::create(pcl::PointCloud<Point>::ConstPtr pointCloud, pcl::PointCloud<Point>::ConstPtr baseConvexHull) {
+        Object::Ptr object(new Object());
+        object->pointCloud = pointCloud;
+        object->baseConvexHull = baseConvexHull;
+
+        return object;
+    }
+
+    ////////////////////////////////////////////////////////
+
+    Object::Collection ObjectDetector::detectObjects(Scene::Ptr scene, Table::Collection tables) {
+        Object::Collection foundObjects(new std::vector<Object::Ptr>());
+
+        /*
+        if (tables->size() > 0) {
+            PointCloud<Point>::ConstPtr objectCloud(new PointCloud<Point>());
+            foundObjects->push_back(Object::create(objectCloud, tables->at(0)->getConvexHull()));
+        }
+        */
+
+        // load configurations
+        int minPoints = config->getInt("objectDetection.minPoints");
+        double minHeight = config->getDouble("objectDetection.minHeight");
+        double clusteringTolerance = config->getDouble("objectDetection.clusteringTolerance");
+        double minDistanceToTable = config->getDouble("objectDetection.minDistanceToTable");
+        double maxDistanceToTable = config->getDouble("objectDetection.maxDistanceToTable");
+
+        // foreach table
+        for (std::vector<Table::Ptr>::iterator table = tables->begin(); table != tables->end(); ++table) {
+
+            // extract all points above the table
+            PointIndices::Ptr indicesAllObjects(new PointIndices());
+            ExtractPolygonalPrismData<Point> objectExtractor;
+            objectExtractor.setInputCloud(scene->getDownsampledPointCloud());
+            objectExtractor.setInputPlanarHull((*table)->getConvexHull());
+            objectExtractor.setHeightLimits(minDistanceToTable, maxDistanceToTable);
+            objectExtractor.segment(*indicesAllObjects);
+
+            if (indicesAllObjects->indices.size() < 1) continue;
+
+            // project all objects to the table plane
+            PointCloud<Point>::Ptr cloudAllObjectsProjected(new PointCloud<Point>());
+            ProjectInliers<Point> projectionTable;
+            projectionTable.setInputCloud(scene->getDownsampledPointCloud());
+            projectionTable.setIndices(indicesAllObjects);
+            projectionTable.setModelType(SACMODEL_PLANE);
+            projectionTable.setModelCoefficients((*table)->getModelCoefficients());
+            projectionTable.filter(*cloudAllObjectsProjected);
+
+            // split the object cloud into clusters (object candidates)
+            std::vector<PointIndices> objectClusters;
+            EuclideanClusterExtraction<Point> objectClusterer;
+            search::KdTree<Point>::Ptr treeObjects(new search::KdTree<Point>);
+            treeObjects->setInputCloud(cloudAllObjectsProjected);
+            objectClusterer.setInputCloud(cloudAllObjectsProjected);
+            objectClusterer.setSearchMethod(treeObjects);
+            objectClusterer.setMinClusterSize(minPoints);
+            objectClusterer.setClusterTolerance(clusteringTolerance);
+            objectClusterer.extract(objectClusters);
+
+            // for each object cluster...
+            for (std::vector<PointIndices>::iterator objectCluster = objectClusters.begin(); objectCluster != objectClusters.end(); ++objectCluster) {
+                PointIndices::Ptr indicesProjectedObject(new PointIndices(*objectCluster));
+
+                // calculate the convex hull of the (projected) object candidate
+                PointCloud<Point>::Ptr hullProjectedObject(new PointCloud<Point>());
+                ConvexHull<PointXYZRGBA> convexHullCalculator;
+                convexHullCalculator.setInputCloud(cloudAllObjectsProjected);
+                convexHullCalculator.setIndices(indicesProjectedObject);
+                convexHullCalculator.reconstruct(*hullProjectedObject);
+
+                // get all points over the projected object (using original cloud, not the downsampled one!)
+                PointIndices::Ptr indicesObject(new PointIndices());
+                objectExtractor.setInputCloud(scene->getFullPointCloud());
+                objectExtractor.setInputPlanarHull(hullProjectedObject);
+                objectExtractor.segment(*indicesObject);
+
+                // convert indices to the final point cloud
+                PointCloud<Point>::Ptr cloudObject(new PointCloud<Point>());
+                ExtractIndices<Point> extractor;
+                extractor.setInputCloud(scene->getFullPointCloud());
+                extractor.setIndices(indicesObject);
+                extractor.filter(*cloudObject);
+
+                /*
+                // check for minimal hight
+                Box3D boxObject;
+                calculateObjectBox(cloudObject, boxObject);
+                if (boxObject.max[2] - boxObject.min[2] < mObjectMinHeight.value()) continue;
+
+                // is the object flying?
+                if (boxObject.min[2] - boxTable.max[2] > 2 * mObjectDistanceToTableMin.value()){
+                    continue;
+                }
+
+                // enough points?
+                if (cloudObject->points.size() < mObjectMinPoints.value()) continue;
+
+                // draw red box around object
+                if (mEnablePointCloudOut.value()){
+                    drawBox(cloudVisualization, boxObject, 0x0000FF);
+                }
+
+                // save candidate
+                cloudVecDetectedObjects.push_back(cloudObject);
+                */
+
+                foundObjects->push_back(Object::create(cloudObject, hullProjectedObject));
+            }
+        }
+
+        return foundObjects;
+    }
+
+    ////////////////////////////////////////////////////////
 
 }

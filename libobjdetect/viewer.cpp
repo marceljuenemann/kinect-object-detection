@@ -64,10 +64,12 @@ namespace libobjdetect {
 
         Scene::Ptr scene = Scene::fromPointCloud(cloud, config);
         Table::Collection detectedTables = tableDetector.detectTables(scene);
+        Object::Collection detectedObjects = objectDetector.detectObjects(scene, detectedTables);
 
         {
             mutex::scoped_lock(resultMutex);
             this->detectedTables = detectedTables;
+            this->detectedObjects = detectedObjects;
         }
 
         posix_time::time_duration diff = posix_time::microsec_clock::local_time() - startTime;
@@ -78,9 +80,11 @@ namespace libobjdetect {
 
     void ObjectDetectionViewer::onUpdate(PCLVisualizer& visualizer) {
         Table::Collection tables;
+        Object::Collection objects;
         {
             mutex::scoped_lock(resultMutex);
             tables = this->detectedTables;
+            objects = this->detectedObjects;
         }
             
         visualizer.removeAllShapes();
@@ -89,9 +93,15 @@ namespace libobjdetect {
         int tableId = 0;
         for (std::vector<Table::Ptr>::iterator table = tables->begin(); table != tables->end(); ++table) {
             sprintf(strbuf, "table%d", tableId++); 
-            visualizer.addPolygon<Point>((*table)->getConvexHull(), 0, 255, 0, strbuf+);
+            visualizer.addPolygon<Point>((*table)->getConvexHull(), 255, 0, 0, strbuf);
         }
-       
+
+        int objectId = 0;
+        for (std::vector<Object::Ptr>::iterator object = objects->begin(); object != objects->end(); ++object) {
+            sprintf(strbuf, "object%d", objectId++);
+            visualizer.addPolygon<Point>((*object)->getBaseConvexHull(), 0, 255, 0, strbuf);
+        }
+
         // TODO: print processing time in lower left corner (together with FPS)
     }
 

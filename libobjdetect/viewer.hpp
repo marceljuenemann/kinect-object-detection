@@ -58,10 +58,11 @@ namespace libobjdetect {
         bool hasCloud;
     };
 
+
     class ObjectDetectionViewer : public PointCloudViewer {
     public:
         ObjectDetectionViewer(ConfigProvider::Ptr config) 
-            : config(config), tableDetector(config)
+            : config(config), tableDetector(config), objectDetector(config)
             {}
 
     protected:
@@ -74,8 +75,11 @@ namespace libobjdetect {
         typedef PointCloudViewer super;
 
         TableDetector tableDetector;
+        ObjectDetector objectDetector;
+
         boost::mutex resultMutex;
         Table::Collection detectedTables;
+        Object::Collection detectedObjects;
         int processingTime;
     };
 }

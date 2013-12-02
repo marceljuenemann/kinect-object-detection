@@ -3,6 +3,8 @@
 
 #include "core.hpp"
 
+#include <pcl/ModelCoefficients.h>
+
 namespace libobjdetect {
 
     /**
@@ -33,15 +35,17 @@ namespace libobjdetect {
         typedef boost::shared_ptr<std::vector<Table::Ptr> > Collection;
         
         pcl::PointCloud<Point>::ConstPtr getConvexHull() { return convexHull; }
+        pcl::ModelCoefficientsConstPtr getModelCoefficients() { return modelCoefficients; }
         Point getMinDimensions() { return minDimensions; }
         Point getMaxDimensions() { return maxDimensions; }
         double getWidth() { return maxDimensions.x - minDimensions.x; }
         double getDepth() { return maxDimensions.z - minDimensions.z; }
 
-        static Table::Ptr fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull);
+        static Table::Ptr fromConvexHull(pcl::PointCloud<Point>::ConstPtr hull, pcl::ModelCoefficients::ConstPtr modelCoefficients);
 
     private:
         pcl::PointCloud<Point>::ConstPtr convexHull;
+        pcl::ModelCoefficients::ConstPtr modelCoefficients;
         Point minDimensions;
         Point maxDimensions;
         
@@ -53,6 +57,32 @@ namespace libobjdetect {
         TableDetector(ConfigProvider::Ptr config) : config(config) {}
         Table::Collection detectTables(Scene::Ptr scene);
         
+    private:
+        ConfigProvider::Ptr config;
+    };
+
+    class Object {
+    public:
+        typedef boost::shared_ptr<Object> Ptr;
+        typedef boost::shared_ptr<std::vector<Object::Ptr> > Collection;
+
+        pcl::PointCloud<Point>::ConstPtr getPointCloud() { return pointCloud; }
+        pcl::PointCloud<Point>::ConstPtr getBaseConvexHull() { return baseConvexHull; }
+
+        static Object::Ptr create(pcl::PointCloud<Point>::ConstPtr pointCloud, pcl::PointCloud<Point>::ConstPtr baseConvexHull);
+
+    private:
+        pcl::PointCloud<Point>::ConstPtr pointCloud;
+        pcl::PointCloud<Point>::ConstPtr baseConvexHull;
+
+        Object(){}
+    };
+
+    class ObjectDetector {
+    public:
+        ObjectDetector(ConfigProvider::Ptr config) : config(config) {}
+        Object::Collection detectObjects(Scene::Ptr scene, Table::Collection tables);
+
     private:
         ConfigProvider::Ptr config;
     };
