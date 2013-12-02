@@ -68,12 +68,19 @@ namespace libobjdetect {
 
         pcl::PointCloud<Point>::ConstPtr getPointCloud() { return pointCloud; }
         pcl::PointCloud<Point>::ConstPtr getBaseConvexHull() { return baseConvexHull; }
+        Point getMinDimensions() { return minDimensions; }
+        Point getMaxDimensions() { return maxDimensions; }
+        double getWidth() { return maxDimensions.x - minDimensions.x; }
+        double getHeight() { return maxDimensions.y - minDimensions.y; }
+        int getPointCount() { return getPointCloud()->points.size(); }
 
         static Object::Ptr create(pcl::PointCloud<Point>::ConstPtr pointCloud, pcl::PointCloud<Point>::ConstPtr baseConvexHull);
 
     private:
         pcl::PointCloud<Point>::ConstPtr pointCloud;
         pcl::PointCloud<Point>::ConstPtr baseConvexHull;
+        Point minDimensions;
+        Point maxDimensions;
 
         Object(){}
     };

@@ -162,6 +162,7 @@ namespace libobjdetect {
         Object::Ptr object(new Object());
         object->pointCloud = pointCloud;
         object->baseConvexHull = baseConvexHull;
+        getMinMax3D(*pointCloud, object->minDimensions, object->maxDimensions);
 
         return object;
     }
@@ -170,13 +171,6 @@ namespace libobjdetect {
 
     Object::Collection ObjectDetector::detectObjects(Scene::Ptr scene, Table::Collection tables) {
         Object::Collection foundObjects(new std::vector<Object::Ptr>());
-
-        /*
-        if (tables->size() > 0) {
-            PointCloud<Point>::ConstPtr objectCloud(new PointCloud<Point>());
-            foundObjects->push_back(Object::create(objectCloud, tables->at(0)->getConvexHull()));
-        }
-        */
 
         // load configurations
         int minPoints = config->getInt("objectDetection.minPoints");
@@ -242,30 +236,16 @@ namespace libobjdetect {
                 extractor.setIndices(indicesObject);
                 extractor.filter(*cloudObject);
 
-                /*
-                // check for minimal hight
-                Box3D boxObject;
-                calculateObjectBox(cloudObject, boxObject);
-                if (boxObject.max[2] - boxObject.min[2] < mObjectMinHeight.value()) continue;
+                // create Object object
+                Object::Ptr object = Object::create(cloudObject, hullProjectedObject);
+                if (object->getHeight() < minHeight) continue;
+                if (object->getPointCount() < minPoints) continue;
 
                 // is the object flying?
-                if (boxObject.min[2] - boxTable.max[2] > 2 * mObjectDistanceToTableMin.value()){
-                    continue;
-                }
+                if (object->getMinDimensions().y - (*table)->getMinDimensions().y > 2 * minDistanceToTable) continue;
 
-                // enough points?
-                if (cloudObject->points.size() < mObjectMinPoints.value()) continue;
-
-                // draw red box around object
-                if (mEnablePointCloudOut.value()){
-                    drawBox(cloudVisualization, boxObject, 0x0000FF);
-                }
-
-                // save candidate
-                cloudVecDetectedObjects.push_back(cloudObject);
-                */
-
-                foundObjects->push_back(Object::create(cloudObject, hullProjectedObject));
+                // save detected object
+                foundObjects->push_back(object);
             }
         }
 
